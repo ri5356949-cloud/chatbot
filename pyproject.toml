@@ -1,0 +1,24 @@
+[project]
+name = "smart-support-ai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "faiss-cpu>=1.13.2",
+    "fastapi>=0.128.0",
+    "langchain>=1.2.6",
+    "langchain-openai>=1.1.7",
+    "load-dotenv>=0.1.0",
+    "numpy>=2.4.1",
+    "openai>=2.15.0",
+    "pypdf>=6.6.0",
+    "python-dotenv>=1.2.1",
+    "streamlit>=1.53.0",
+    "uvicorn>=0.40.0",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.1.0",
+]
