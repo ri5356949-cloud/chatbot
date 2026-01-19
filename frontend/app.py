@@ -1,19 +1,24 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="SmartSupport AI")
-st.title("🤖 SmartSupport AI")
+st.title("📄 Smart Support AI")
 
-BACKEND_URL = "http://127.0.0.1:8000/chat"
+uploaded_file = st.file_uploader("Upload PDF", type="pdf")
 
-user_input = st.text_input("Ask something:")
+if uploaded_file:
+    files = {"file": uploaded_file}
+    requests.post("http://127.0.0.1:8000/upload-pdf", files=files)
+    st.success("PDF uploaded")
 
-if st.button("Send") and user_input:
-    payload = {"message": user_input}
+question = st.text_input("Ask your question")
 
-    try:
-        res = requests.post(BACKEND_URL, json=payload)
-        data = res.json()
-        st.success(data["reply"])
-    except Exception as e:
-        st.error(f"Error: {e}")
+if st.button("Ask"):
+    res = requests.post(
+        "http://127.0.0.1:8000/ask",
+        json={"question": question}
+    )
+    data = res.json()
+
+    st.write("### Answer:")
+    st.write(data["answer"])
+    st.caption(f"Source: {data['source']}")

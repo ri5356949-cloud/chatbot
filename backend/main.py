@@ -1,37 +1,55 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from dotenv import load_dotenv
 import os
-from openai import OpenAI
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from backend.rag import ask_question, load_user_pdf
+from pydantic import BaseModel
 
-load_dotenv()
+app = FastAPI()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+class Question(BaseModel):
+    question: str
 
-app = FastAPI(title="SmartSupport AI")
-
-class ChatRequest(BaseModel):
-    message: str
-
-class ChatResponse(BaseModel):
-    reply: str
-
-@app.get("/")
-def health_check():
-    return {"status": "Backend is running"}
-
-@app.post("/chat", response_model=ChatResponse)
-def chat(req: ChatRequest):
+@app.post("/upload-pdf")
+async def upload_pdf(file: UploadFile = File(...)):
     try:
-        completion = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful customer support assistant."},
-                {"role": "user", "content": req.message}
-            ]
-        )
-        reply = completion.choices[0].message.content
+        # 1. Check if file is PDF
+        if not file.filename.endswith('.pdf'):
+            raise HTTPException(
+                status_code=400,
+                detail="Only PDF files are allowed"
+            )
+        
+        # 2. Create temp folder
+        os.makedirs("temp", exist_ok=True)
+        
+        # 3. Read and save file
+        contents = await file.read()
+        file_path = f"temp/{file.filename}"
+        
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        
+        # 4. Process PDF
+        load_user_pdf(file_path)
+        
+        return {
+            "message": "PDF uploaded successfully",
+            "filename": file.filename,
+            "status": "success"
+        }
+        
     except Exception as e:
-        reply = f"AI Error: {e}"
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error uploading PDF: {str(e)}"
+        )
 
-    return {"reply": reply}
+@app.post("/ask")
+def ask(data: Question):
+    try:
+        result = ask_question(data.question)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing question: {str(e)}"
+        )
